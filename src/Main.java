@@ -20,10 +20,19 @@ public class Main {
         System.out.println("Number of next states: " + nextStates.size());
 
         for (State s : nextStates) {
-            System.out.println("A: (" + s.ax + ", " + s.ay + "),B: (" + s.bx + ", " + s.by + ")");
+            System.out.println("A: (" + s.ax + ", " + s.ay + "), B: (" + s.bx + ", " + s.by + ")");
         }
+
+        System.out.println(hasSolution(map, start));
+        System.out.println(shortestMakespan(map, start));
+
+        StateRecord goalRecord = findGoalRecord(map, start);
+
+        System.out.println(goalRecord != null);
+        System.out.println(goalRecord.previous != null);
     }
 
+    //辅助判断位置是否可行
     public static boolean isLegal(HospitalMap map, State current, State next) {
         //next新位置是否可以走
         if(!map.isFree(next.ax, next.ay) || !map.isFree(next.bx, next.by)){
@@ -40,6 +49,142 @@ public class Main {
         }
 
         return true;
+    }
+
+    //存在多个ticks的时候防止新状态绕回旧状态
+    public static boolean sameState(State s1, State s2){
+        return s1.ax == s2.ax &&
+               s1.ay == s2.ay &&
+               s1.bx == s2.bx &&
+               s1.by == s2.by;
+    } 
+    public static boolean containsState(List<State> states, State target){
+        for(State s : states){
+            if(sameState(s, target)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //这张地图是否存在解使得A,B都到达目标,每n层level就是n个tick
+    public static boolean hasSolution(HospitalMap map, State start){
+        List<State> currentLevel = new ArrayList<>();
+        List<State> nextLevel = new ArrayList<>();
+        List<State> visited = new ArrayList<>();
+
+        currentLevel.add(start);
+        visited.add(start);
+
+        while(!currentLevel.isEmpty()){
+            nextLevel.clear();
+
+            for(State current : currentLevel){
+                if(isGoal(map, current)){
+                    return true;
+                }
+
+                List<State> nextStates = getNextStates(map, current);
+
+                for(State newState : nextStates){
+                    if(!containsState(visited, newState)){
+                        visited.add(newState);
+                        nextLevel.add(newState);
+                    }
+                }
+            }
+            //当前层全部检查完以后进入下一层
+            currentLevel = new ArrayList<>(nextLevel);
+        }
+
+        return false;
+    }
+
+    /*
+      跟上面的hasSolution结构类似,思路为:按照从小到大的步数暴力列举出所有可能的
+      走法,然后能够到达则输出true,因此输出的时候一定是步数最小的情况
+    */
+    public static int shortestMakespan(HospitalMap map, State start){
+        List<State> currentLevel = new ArrayList<>();
+        List<State> nextLevel = new ArrayList<>();
+        List<State> visited = new ArrayList<>();
+
+        int steps = 0;
+
+        currentLevel.add(start);
+        visited.add(start);
+
+        while(!currentLevel.isEmpty()){
+            nextLevel.clear();
+
+            for(State current : currentLevel){
+                if(isGoal(map, current)){
+                    return steps;
+                }
+
+                List<State> nextStates = getNextStates(map, current);
+
+                for(State newState : nextStates){
+                    if(!containsState(visited, newState)){
+                        visited.add(newState);
+                        nextLevel.add(newState);
+                    }
+                }
+            }
+            //当前层全部检查完以后进入下一层
+            currentLevel = new ArrayList<>(nextLevel);
+            steps ++;
+        }
+
+        return -1;
+    }
+
+    //按照状态找记录
+    public static StateRecord findRecord(List<StateRecord> records, State target){
+        for(StateRecord record : records){
+            if(sameState(record.state, target)){
+                return record;
+            }
+        }
+        return null;
+    }
+
+    public static StateRecord findGoalRecord(HospitalMap map, State start){
+        List<State> currentLevel = new ArrayList<>();
+        List<State> nextLevel = new ArrayList<>();
+        List<StateRecord> records = new ArrayList<>();
+        
+        StateRecord startRecord = new StateRecord(start, null);
+
+        currentLevel.add(start);
+        records.add(startRecord);
+
+        while(!currentLevel.isEmpty()){
+            nextLevel.clear();
+
+            for(State current : currentLevel){
+                if(isGoal(map, current)){
+                    return findRecord(records, current);
+                }
+
+                List<State> nextStates = getNextStates(map, current);
+                
+                //发现一个不存在记录的新状态,则添加当前的状态为这个新状态的记录
+                for(State newState : nextStates){
+                    if(findRecord(records, newState) == null){
+                        //把终点记录变为链表结构,从终点指向previous直至起点的null
+                        StateRecord currentRecord = findRecord(records, current);
+
+                        records.add(new StateRecord(newState,currentRecord));
+                        nextLevel.add(newState);
+                    }
+                }
+            }
+
+            currentLevel = new ArrayList<>(nextLevel);
+        }
+
+        return null;
     }
 
     public static List<State> getNextStates(HospitalMap map, State currentState){
@@ -65,5 +210,13 @@ public class Main {
             }
         }
         return nextStates;
+    }
+
+    //是否到达终点
+    public static boolean isGoal(HospitalMap map, State currentState){
+        return currentState.ax == map.taRow &&
+               currentState.ay == map.taCol &&
+               currentState.bx == map.tbRow &&
+               currentState.by == map.tbCol;
     }
 }
