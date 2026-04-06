@@ -4,11 +4,14 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
         String[] lines = {
-            "#####",
-            "#A.B#",
-            "#...#",
-            "#a.b#",
-            "#####"
+            "#########",
+            "#A....#B#",
+            "#.##.#..#",
+            "#...#...#",
+            "#.#...#.#",
+            "#..#.##.#",
+            "#a....#b#",
+            "#########"
         };
 
         HospitalMap map = new HospitalMap(lines);
@@ -28,8 +31,53 @@ public class Main {
 
         StateRecord goalRecord = findGoalRecord(map, start);
 
-        System.out.println(goalRecord != null);
-        System.out.println(goalRecord.previous != null);
+        //System.out.println(goalRecord != null);
+        //System.out.println(goalRecord.previous != null);
+
+        List<State> path = buildPath(goalRecord);
+        List<String> schedule = buildSchedule(path);
+
+        for(String step : schedule){
+            System.out.println(step);
+        }
+    }
+    
+    //还原路径
+    public static List<State> buildPath(StateRecord goalRecord){
+        List<State> path = new ArrayList<>();
+
+        StateRecord current = goalRecord;
+        
+        while(current != null){
+            path.add(0, current.state);
+            current = current.previous;
+        }
+        return path;
+    }
+
+    //还原具体走向
+    public static String getMove(int oldRow, int oldCol, int newRow, int newCol){
+        if(newRow == oldRow - 1 && newCol == oldCol) return "N";
+        if(newRow == oldRow + 1 && newCol == oldCol) return "S";
+        if(newRow == oldRow && newCol == oldCol + 1) return "E";
+        if(newRow == oldRow && newCol == oldCol - 1) return "W";
+        return "WAIT";
+    }
+
+    //还原行动日志
+    public static List<String> buildSchedule(List<State> path){
+        List<String> schedule = new ArrayList<>();
+
+        for(int i = 0; i < path.size() - 1; i ++){
+            State current = path.get(i);
+            State next = path.get(i + 1);
+
+            String moveA = getMove(current.ax, current.ay, next.ax, next.ay);
+            String moveB = getMove(current.bx, current.by, next.bx, next.by);
+
+            schedule.add("(" + moveA + ", " + moveB + ")");
+        }
+        return schedule;
     }
 
     //辅助判断位置是否可行
@@ -139,7 +187,7 @@ public class Main {
         return -1;
     }
 
-    //按照状态找记录
+    //按照状态找记录,相当于把State变成StateRecord
     public static StateRecord findRecord(List<StateRecord> records, State target){
         for(StateRecord record : records){
             if(sameState(record.state, target)){
