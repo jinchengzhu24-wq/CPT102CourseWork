@@ -99,7 +99,7 @@ public class Main {
         return true;
     }
 
-    //存在多个ticks的时候防止新状态绕回旧状态
+    //存在多个ticks的时候防止新状态绕回旧状态导致死循环
     public static boolean sameState(State s1, State s2){
         return s1.ax == s2.ax &&
                s1.ay == s2.ay &&
@@ -121,6 +121,9 @@ public class Main {
         List<State> nextLevel = new ArrayList<>();
         List<State> visited = new ArrayList<>();
 
+        //current:当前tick能到达的所有状态
+        //next:下一层tick
+        //visited:防止重复
         currentLevel.add(start);
         visited.add(start);
 
