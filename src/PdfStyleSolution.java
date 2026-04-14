@@ -152,7 +152,7 @@ public class PdfStyleSolution {
             succ.add(computeSuccessors(id));
         }
 
-        //创建一个三维数组用于判断T个tick后A,B能否到达a,b
+        //创建一个三维数组用于判断T个tick后(a,b)是否能到达(TA,TB)
         //从0到T一共T+1层
         boolean[][][] reachable = new boolean[T + 1][P][P];
         //初始化即第0层,初始在起点一定正确
@@ -167,12 +167,14 @@ public class PdfStyleSolution {
         for (int t = 1; t <= T; t++) {
             for (int a = 0; a < P; a++) {
                 for (int b = 0; b < P; b++) {
-                    //对于上一层,哪些联合状态真的可以到(a,b),不可到达则跳过
+                    //(a,b)是上一层可能存在的联合状态
+                    //对于上一层,哪些联合状态是真的可以到达,不可到达则跳过
                     if (!reachable[t - 1][a][b]) {
                         continue;
                     }
 
-                    //若上一层可以到达且下一步移动合理,那么这一层状态就是可以到达
+                    //(a2,b2)是这一层可能存在的联合状态
+                    //若上一层的状态可以到达且下一步移动合理,那么这一层状态就是可能的
                     for (int a2 : succ.get(a)) {
                         for (int b2 : succ.get(b)) {
                             if (isLegalTransition(a, b, a2, b2)) {
@@ -183,6 +185,7 @@ public class PdfStyleSolution {
                 }
             }
 
+            //到达终点即返还T
             if (reachable[t][TA][TB]) {
                 return t;
             }
